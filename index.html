@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0b0f17">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Trade Assistant</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="dot"></span> Trade Assistant</div>
+  <div id="status" class="status" aria-live="polite"></div>
+</header>
+
+<main>
+  <!-- CHART -->
+  <section id="view-chart" class="view active">
+    <form id="symForm" class="symbar">
+      <input id="symInput" list="symList" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="BTCUSDT, ETHUSDT, EURUSD, AAPL" aria-label="Symbol">
+      <datalist id="symList">
+        <option value="BTCUSDT"><option value="ETHUSDT"><option value="SOLUSDT"><option value="BNBUSDT">
+        <option value="XRPUSDT"><option value="DOGEUSDT"><option value="EURUSD"><option value="GBPUSD">
+        <option value="XAU/USD"><option value="AAPL"><option value="TSLA"><option value="NVDA">
+      </datalist>
+      <button type="submit" class="btn primary">Load</button>
+    </form>
+    <div id="tfRow" class="chips" role="tablist" aria-label="Timeframe"></div>
+    <div class="price-line"><span id="pxNow" class="px">–</span><span id="pxChg" class="chg"></span><span id="pxSrc" class="muted small"></span></div>
+    <div id="chartBox" class="chart-box"><div id="chart"></div></div>
+    <div class="row gap">
+      <button id="btnExplain" class="btn primary grow">Break down with AI</button>
+      <button id="btnLogTrade" class="btn grow">Log this trade</button>
+    </div>
+    <div id="analysis" class="card"><p class="muted">Load a symbol to see live analysis.</p></div>
+  </section>
+
+  <!-- AI CHAT -->
+  <section id="view-chat" class="view">
+    <div id="chatLog" class="chat-log"></div>
+    <div id="quick" class="chips scroll">
+      <button class="chip" data-q="Break down this chart across all timeframes and tell me the best trade, or if I should wait.">Break down chart</button>
+      <button class="chip" data-q="Give me a precise trade plan with entry, stop, targets and position size.">Trade plan</button>
+      <button class="chip" data-q="What are the biggest risks to this trade and what would invalidate it?">Risks</button>
+      <button class="chip" data-q="How could the latest news and sentiment affect this market?">News impact</button>
+      <button class="chip" data-q="Review my trading journal stats. What mistakes am I making and what should I fix first?">Review my trades</button>
+    </div>
+    <div id="attachPrev" class="attach-prev" hidden></div>
+    <form id="chatForm" class="composer">
+      <label class="icon-btn" title="Attach chart screenshot" aria-label="Attach chart screenshot">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+        <input id="fileInput" type="file" accept="image/*" hidden>
+      </label>
+      <textarea id="chatInput" rows="1" placeholder="Ask anything, or attach a chart screenshot" aria-label="Message"></textarea>
+      <button class="btn primary send" type="submit" aria-label="Send">Send</button>
+    </form>
+  </section>
+
+  <!-- JOURNAL -->
+  <section id="view-journal" class="view">
+    <div class="row gap">
+      <button id="btnAddTrade" class="btn primary grow">+ Add trade</button>
+      <label class="btn grow center">Import CSV<input id="csvIn" type="file" accept=".csv,text/csv" hidden></label>
+      <button id="btnExport" class="btn">Export</button>
+    </div>
+    <form id="tradeForm" class="card form" hidden>
+      <div class="grid2">
+        <label>Symbol<input name="symbol" required autocapitalize="characters" placeholder="BTCUSDT"></label>
+        <label>Side<select name="side"><option value="long">Long</option><option value="short">Short</option></select></label>
+        <label>Entry<input name="entry" type="number" step="any" inputmode="decimal" required></label>
+        <label>Stop loss<input name="stop" type="number" step="any" inputmode="decimal"></label>
+        <label>Exit (blank = still open)<input name="exit" type="number" step="any" inputmode="decimal"></label>
+        <label>Size<input name="size" type="number" step="any" inputmode="decimal" value="1"></label>
+        <label>P&amp;L override (optional)<input name="pnl" type="number" step="any" inputmode="decimal"></label>
+        <label>Tags (comma separated)<input name="tags" placeholder="breakout, news"></label>
+      </div>
+      <label>Notes<textarea name="notes" rows="2" placeholder="Why did you take it? How did you feel?"></textarea></label>
+      <div class="row gap"><button class="btn primary grow" type="submit">Save trade</button><button type="button" id="btnCancelTrade" class="btn">Cancel</button></div>
+    </form>
+    <div id="tradeList" class="list"></div>
+  </section>
+
+  <!-- STATS -->
+  <section id="view-stats" class="view">
+    <div id="statsBox"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="view-settings" class="view">
+    <form id="settingsForm" class="card form">
+      <h3>AI provider</h3>
+      <p class="muted small">Keys stay on this phone. Add at least one. If one hits its free limit the app falls back to the others automatically.</p>
+      <label>Preferred provider
+        <select name="provider">
+          <option value="groq">Groq (free, fast, Llama 70B)</option>
+          <option value="gemini">Google Gemini (free)</option>
+          <option value="openrouter">OpenRouter (free models)</option>
+          <option value="ollama">Ollama (your own PC, unlimited)</option>
+        </select>
+      </label>
+      <label>Groq API key <a href="https://console.groq.com/keys" target="_blank" rel="noopener">get free key</a><input name="groqKey" type="password" autocomplete="off" placeholder="gsk_..."></label>
+      <label>Gemini API key <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">get free key</a><input name="geminiKey" type="password" autocomplete="off" placeholder="AIza..."></label>
+      <label>OpenRouter API key <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">get free key</a><input name="openrouterKey" type="password" autocomplete="off" placeholder="sk-or-..."></label>
+      <label class="check"><input name="ollamaEnabled" type="checkbox"> Use Ollama</label>
+      <label>Ollama address<input name="ollamaUrl" placeholder="http://192.168.1.10:11434"></label>
+      <details><summary>Model names (change if a provider renames them)</summary>
+        <div class="grid2">
+          <label>Groq text<input name="groqModel"></label><label>Groq vision<input name="groqVisionModel"></label>
+          <label>Gemini text<input name="geminiModel"></label><label>Gemini vision<input name="geminiVisionModel"></label>
+          <label>OpenRouter text<input name="openrouterModel"></label><label>OpenRouter vision<input name="openrouterVisionModel"></label>
+          <label>Ollama text<input name="ollamaModel"></label><label>Ollama vision<input name="ollamaVisionModel"></label>
+        </div>
+      </details>
+      <h3>Markets &amp; risk</h3>
+      <label>Twelve Data key (only for stocks / forex) <a href="https://twelvedata.com/apikey" target="_blank" rel="noopener">get free key</a><input name="twelveKey" type="password" autocomplete="off"></label>
+      <div class="grid2">
+        <label>Account size<input name="account" type="number" step="any" inputmode="decimal" placeholder="1000"></label>
+        <label>Risk per trade %<input name="riskPct" type="number" step="any" inputmode="decimal" placeholder="1"></label>
+      </div>
+      <div class="row gap"><button class="btn primary grow" type="submit">Save</button><button type="button" id="btnTestAI" class="btn grow">Test AI</button></div>
+      <p id="settingsMsg" class="small muted" aria-live="polite"></p>
+    </form>
+    <div class="card">
+      <h3>Install on your phone</h3>
+      <p class="small muted">Open this page in Chrome, tap the menu (⋮), then <b>Add to Home screen</b> / <b>Install app</b>. It then opens full screen like a normal app.</p>
+      <button id="btnWipe" class="btn danger">Erase all journal data</button>
+    </div>
+    <p class="small muted center pad">Analysis tool, not financial advice. Markets are uncertain and you can lose money.</p>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Main">
+  <button data-view="chart" class="active"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg><span>Chart</span></button>
+  <button data-view="chat"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>AI</span></button>
+  <button data-view="journal"><svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6zM9 8h6M9 12h6M9 16h4"/></svg><span>Journal</span></button>
+  <button data-view="stats"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Stats</span></button>
+  <button data-view="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></button>
+</nav>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="indicators.js"></script>
+<script src="analysis.js"></script>
+<script src="data.js"></script>
+<script src="journal.js"></script>
+<script src="ai.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
